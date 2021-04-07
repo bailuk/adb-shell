@@ -11,11 +11,63 @@ from gi.repository import Gtk, GLib
 from pathlib import Path
 
 
-# configure script here:  
-APP_ICON  = '/usr/local/share/icons/adb-shell.png'
-APP_TITLE = 'ADB Shell'
-APP_BASE_MOUNT_PATH = Path.home()  / 'android-fuse'
-APP_MOUNT_COMMAND = 'python3 android-fuse.py'
+class Config():
+    def __init__(self):
+        '''
+        configure script here:
+        '''
+        self.config = dict()
+
+
+        ######### BEGIN CONFIG ###############################################
+
+
+        # title and icon
+        self.config['title'] = 'ADB Shell'
+        self.config['icon'] = ''
+                
+        # mount point for fuse file system
+        self.config['mount_path'] = '~/android-fuse'
+
+        # mount command (see https://github.com/bailuk/android-fuse)
+        self.config['mount_cmd'] = '~/git/android-fuse/android-fuse.py'
+        
+        # directory where adb is installed (will be added to path)
+        self.config['adb_path'] = '~/Android/Sdk/platform-tools/'
+        
+        # adb command
+        self.config['adb'] = 'adb'
+
+        ######### END CONFIG #################################################
+
+
+
+        
+        self.fixPath('mount_cmd')        
+        self.fixPath('mount_path')
+        self.fixPath('adb_path')
+
+        if os.path.exists(self.config['adb_path']):
+            os.environ['PATH'] = os.environ['PATH'] + ":" + str(self.config['adb_path'])
+
+        self.config['mount_cmd'] = str(self.get('mount_cmd'))        
+       
+         
+       
+    def fixPath(self, key):
+        self.config[key] = Path(os.path.expanduser(self.config[key]))
+        
+    
+
+    def get(self, key):
+        try:
+            return self.config[key]
+    
+        except:
+            return '';
+
+            
+            
 
 
 def cmd_list(args):
@@ -48,6 +100,9 @@ def cmd_fg(args):
         return False
 
 
+
+
+
 def ensure_dir(path):
     if not os.path.exists(path):
         os.makedirs(path)
@@ -67,7 +122,7 @@ def umount(mpoint):
 
 def cmd_fuse(mpoint, dev):
     if ensure_dir(mpoint):
-        cmd_bg(APP_MOUNT_COMMAND + ' ' + mpoint + ' -s ' + dev)
+        cmd_bg(CFG.get('mount_cmd') + ' ' + mpoint + ' -s ' + dev)
        
 
 def mount_wait(mpoint, dev):
@@ -81,7 +136,9 @@ def mount(mpoint, dev):
     if not is_mounted(mpoint):
         cmd_fuse(mpoint, dev)
 
+  
 
+CFG = Config()
 
 class Properties():
     def __init__(self):
@@ -99,7 +156,7 @@ class Properties():
         
     def add(self, dev, prop):
         print(prop)
-        p = cmd_read('adb -s ' + dev + ' shell getprop ' + prop).strip()
+        p = cmd_read(str(CFG.get('adb')) + ' -s ' + dev + ' shell getprop ' + prop).strip()
         if dev not in self.props:
             self.props[dev] = dict()
             
@@ -118,13 +175,13 @@ class Devices():
         return self.device_list
 
     def get_mpoint(self, dev):
-        return (APP_BASE_MOUNT_PATH / dev).absolute().as_posix()
+        return (CFG.get('mount_path') / dev).absolute().as_posix()
 
 
     def read_list(self):
         result = list()
 
-        for line in cmd_lines('adb devices'):
+        for line in cmd_lines(str(CFG.get('adb')) + ' devices'):
             t = line.split('\t')
             if len(t) == 2:
                 dev_id, dev_type = t
@@ -195,7 +252,7 @@ class ActionShell(Action):
         return 'ADB Shell'
 
     def call(self, caller):
-        cmd_bg([ 'xfce4-terminal', '-e', 'adb -s ' + self.device['id'] + ' shell'])
+        cmd_bg([ 'xfce4-terminal', '-e', CFG.get('adb') + ' -s ' + self.device['id'] + ' shell'])
 
 
 class ActionLocalShell(Action):
@@ -264,7 +321,8 @@ class Controler():
                 ]
 
     def adb_version(self):
-        return cmd_read('adb version').strip()
+        print(CFG.get('adb') + ' version')
+        return cmd_read(CFG.get('adb') + ' version').strip()
 
 
 class UiDeviceEntry(Gtk.Box):
@@ -305,7 +363,9 @@ class UiHeader(Gtk.Box):
 
         self.controler = controler
 
-        self.add(Gtk.Image.new_from_file (APP_ICON))
+        icon = Gtk.Image.new_from_file (CFG.get('icon'))
+        self.add(icon)
+        
         self.label = Gtk.Label(label=controler.adb_version())
         self.add(self.label)
 
@@ -349,20 +409,20 @@ class UiContent(Gtk.Box):
         self.show_all()
 
 
-
 class UiAppWindow(Gtk.ApplicationWindow):
 
 
     def __init__(self):
         Gtk.ApplicationWindow.__init__(self)
         self.set_border_width(20)
-        self.set_title(APP_TITLE)
+        self.set_title(CFG.get('title'))
         
-        if os.access(APP_ICON, os.R_OK):
-            self.set_icon_from_file(APP_ICON)
+        if os.access(CFG.get('icon'), os.R_OK):
+            self.set_icon_from_file(CFG.get('icon'))
             
         self.add(UiContent())
         self.show_all()
+
 
 
 win = UiAppWindow()
