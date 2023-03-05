@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 '''
-adb_shell: UI Frontend to ADB and android_fuse
+UI Frontend to ADB and android_fuse
 See https://github.com/bailuk/android-fuse
 and https://github.com/bailuk/adb-shell
 '''
@@ -10,12 +10,10 @@ from pathlib import Path
 import time
 import subprocess
 import os
-
 import gi
-gi.require_version("Gtk", "3.0")
 
-from gi.repository import Gtk, GLib
-
+gi.require_version("Gtk", "4.0")
+from gi.repository import Gio, Gtk, GLib
 
 class Config():
     '''
@@ -270,7 +268,6 @@ class Action():
     '''
 
     def __init__(self, controler, device):
-        print(f"DEBUG: {device['mpoint']}")
         self.controler = controler
         self.device = device
         self.mount_point = MountPoint(device['mpoint'], device['id'])
@@ -404,18 +401,19 @@ class UiDeviceEntry(Gtk.Box):
         self.device = device
         self.controler = controler
 
-        self.add(Gtk.Separator(orientation = Gtk.Orientation.VERTICAL))
-        self.add(Gtk.Label(label=self.__device_str()))
-        self.add(self.__create_actions())
+        self.append(Gtk.Separator(orientation = Gtk.Orientation.VERTICAL))
+        self.append(Gtk.Label(label=self.__device_str()))
+        self.append(self.__create_actions())
 
 
     def __create_actions(self):
-        result = Gtk.Box(orientation = Gtk.Orientation.HORIZONTAL, spacing = 5)
+        result = Gtk.Box(orientation = Gtk.Orientation.HORIZONTAL)
 
+        result.add_css_class('linked')
         for action in self.controler.actions(self.device):
             button = Gtk.Button(label=action.get_name())
             button.connect('clicked', action.call)
-            result.add(button)
+            result.append(button)
         return result
 
     def __device_str(self):
@@ -436,7 +434,7 @@ class UiHeader(Gtk.Box):
         self.controler = controler
 
         self.label = Gtk.Label(label=controler.adb_version())
-        self.add(self.label)
+        self.append(self.label)
 
     def update(self):
         '''Update contents'''
@@ -444,17 +442,20 @@ class UiHeader(Gtk.Box):
 
 
 class UiContent(Gtk.Box):
-    '''
-    UI Layout containing header and device list
-    '''
+    '''Layout containing header and device list'''
 
     def __init__(self):
         Gtk.Box.__init__(self, orientation = Gtk.Orientation.VERTICAL, spacing = 20)
 
         self.controler = Controler(self)
 
+        self.set_margin_start(20)
+        self.set_margin_end(20)
+        self.set_margin_top(10)
+        self.set_margin_bottom(10)
+
         self.header = UiHeader(self.controler)
-        self.add(self.header)
+        self.append(self.header)
 
         self.entries = self.__create_entries()
 
@@ -464,7 +465,7 @@ class UiContent(Gtk.Box):
 
         for device in self.controler.devices.get():
             result.append(UiDeviceEntry(self.controler, device))
-            self.add(result[-1])
+            self.append(result[-1])
 
         return result
 
@@ -482,22 +483,27 @@ class UiContent(Gtk.Box):
         self.header.update()
         self.entries = self.__remove_entries()
         self.entries = self.__create_entries()
-        self.show_all()
 
 
 class UiAppWindow(Gtk.ApplicationWindow):
-    '''
-    Main Window
-    '''
+    '''Application main window'''
+
+    def __init__(self, app):
+        Gtk.ApplicationWindow.__init__(self, application=app)
+        self.set_title(CFG.get('title'))
+        self.set_child(UiContent())
+
+class Application(Gtk.Application):
+    '''Main Application class'''
 
     def __init__(self):
-        Gtk.ApplicationWindow.__init__(self)
-        self.set_border_width(20)
-        self.set_title(CFG.get('title'))
+        Gtk.Application.__init__(
+            self,
+            application_id = "ch.bailu.adb_shell",
+            flags=Gio.ApplicationFlags.FLAGS_NONE
+        )
 
-        self.add(UiContent())
-        self.show_all()
+    def do_activate(self):
+        UiAppWindow(self).present()
 
-
-UiAppWindow().connect("destroy", Gtk.main_quit)
-Gtk.main()
+Application().run()

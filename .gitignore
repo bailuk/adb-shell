@@ -1,1 +1,3 @@
 todo/
+.mypy_cache/
+.vscode/

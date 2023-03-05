@@ -2,7 +2,7 @@
 
 # Installs desktop file
 
-app="adb-shell"
+app="adb_shell"
 app_id="${app}"
 target="${HOME}/.local/share/applications/"
 desktop="${target}/${app_id}.desktop"
