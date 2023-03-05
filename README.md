@@ -6,7 +6,7 @@ Simple shell for [adb](https://developer.android.com/studio/command-line/adb) an
 ## Dependencies
 
 - python3
-- [python gtk3 bindings](https://pygobject.readthedocs.io/en/latest/)
+- [python GTK4 bindings](https://pygobject.readthedocs.io/en/latest/)
 - [adb](https://developer.android.com/studio/)
 - [android-fuse](https://github.com/bailuk/android-fuse) or other filesystem support for Android devices
 
