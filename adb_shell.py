@@ -29,7 +29,7 @@ class Config():
             'mount_path': self.__expand('~/android-fuse'),
 
             # mount command (see https://github.com/bailuk/android-fuse)
-            'mount_cmd': self.__expand('~/git/android-fuse/android-fuse.py'),
+            'mount_cmd': self.__expand('~/git/android-fuse/android_fuse.py'),
 
             # directory where adb is installed (will be added to path)
             'adb_path': self.__expand('~/Android/Sdk/platform-tools/'),
@@ -185,7 +185,6 @@ class Properties():
             self.props[dev] = {}
 
         self.props[dev][prop] = value
-
 
 
 class Devices():
