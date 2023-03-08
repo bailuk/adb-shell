@@ -18,7 +18,7 @@ Adjust `dict` entries inside constructor of `Config` class (at beginning of scri
 ## Run
 
 ```bash
-./adb-shell.py
+./adb_shell.py
 ```
 
 
